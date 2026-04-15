@@ -8,13 +8,16 @@
 |-------|------|
 | `pm` | 全流程助手：需求承接 → 分析 → 设计 → 边界推敲 → 开发交接 → 测试用例 |
 | `pm-review` | 代码审查：安全、性能、边界、业务逻辑 |
+| `pm-sync` | 钉钉表格解析：粘贴表格 → 结构化需求列表 |
 
 ### 核心特性
 
 - **全流程覆盖**：从需求承接到测试用例，一个 Agent 搞定
 - **持久记忆**：越用越懂你，记住你的偏好、项目信息、需求历史
+- **子Agent调度**：自动判断何时调用专业子Agent（代码审查、表格解析）
+- **PRD模板**：输出格式统一，可直接用于评审
+- **Skill集成**：自动发现并使用已安装的 Skills
 - **业务语言**：输出给 PM 看的，不用代码术语
-- **代码审查**：粘贴代码就能找边界问题和安全隐患
 
 ## 安装
 
@@ -28,8 +31,7 @@
 ```bash
 # 全局安装（所有项目都能用）
 mkdir -p ~/.config/opencode/agents
-cp agents/pm.md ~/.config/opencode/agents/
-cp agents/pm-review.md ~/.config/opencode/agents/
+cp agents/*.md ~/.config/opencode/agents/
 ```
 
 ### 步骤二：初始化记忆文件
@@ -38,8 +40,9 @@ cp agents/pm-review.md ~/.config/opencode/agents/
 
 ```bash
 cd /你的项目目录
-mkdir -p pm-memory
-cp /path/to/pm-agent-bundle/pm-memory/*.md pm-memory/
+mkdir -p pm-memory/templates
+cp ~/pm-agent-bundle/pm-memory/*.md pm-memory/
+cp ~/pm-agent-bundle/pm-memory/templates/*.md pm-memory/templates/
 ```
 
 安装后项目结构：
@@ -48,11 +51,15 @@ cp /path/to/pm-agent-bundle/pm-memory/*.md pm-memory/
 your-project/
 ├── src/
 ├── ...
-└── pm-memory/          ← Agent 的记忆目录
-    ├── user.md         ← 用户画像
-    ├── projects.md     ← 项目信息
-    ├── conventions.md  ← 工作规范
-    └── history.md      ← 需求历史
+└── pm-memory/
+    ├── user.md               用户画像
+    ├── projects.md           项目信息
+    ├── conventions.md        工作规范
+    ├── history.md            需求历史
+    └── templates/
+        ├── prd.md            PRD模板
+        ├── requirement.md    需求卡片模板
+        └── test-case.md      测试用例模板
 ```
 
 ### 步骤三：启动
@@ -68,31 +75,50 @@ your-project/
 ```
 你: @pm 我有个新需求
 你: [粘贴需求原文]
-AI: [输出需求卡片，带澄清问题]
+AI: [按需求卡片模板输出，带澄清问题]
 你: [回答问题]
-AI: [输出完整需求卡片] 需要继续分析吗？
+AI: [完整需求卡片] 需要继续分析吗？
 你: 继续
-AI: [输出需求分析报告] 需要继续做设计吗？
+AI: [按PRD模板输出分析报告]
 你: 继续
-AI: [输出PRD] 需要推敲边界吗？
+AI: [按PRD模板输出设计方案]
+你: 帮我写测试用例
+AI: [按测试用例模板输出]
 你: 帮我整理给开发
 AI: [输出开发任务清单]
-你: 帮我写测试用例
-AI: [输出测试用例]
 ```
 
 ### 代码审查
+
+```
+你: @pm 帮我审查这段代码
+[粘贴代码]
+AI: 我让代码审查助手来看看...
+    [自动调用 @pm-review 输出审查报告]
+```
+
+或者直接调用：
 
 ```
 @pm-review 帮我看看这段代码
 [粘贴代码]
 ```
 
-审查维度：
-- 业务逻辑是否符合需求
-- 边界场景是否遗漏
-- 安全问题（权限、注入、数据暴露）
-- 性能隐患（N+1查询、大数据量）
+### 钉钉表格解析
+
+```
+你: @pm 帮我看看钉钉表格里有什么需求
+[从钉钉复制粘贴表格数据]
+AI: 我让表格解析助手来看看...
+    [自动调用 @pm-sync 输出结构化需求列表]
+```
+
+或者直接调用：
+
+```
+@pm-sync 帮我解析这个表格
+[粘贴表格数据]
+```
 
 ### 直接跳到某一步
 
@@ -127,6 +153,7 @@ Agent 会自动学习和记忆，不需要你手动管理。
 | `pm-memory/projects.md` | 项目模块、接口、数据表 |
 | `pm-memory/conventions.md` | 命名规范、审批流程、上线规范 |
 | `pm-memory/history.md` | 所有做过的需求数记录 |
+| `pm-memory/templates/*.md` | PRD、需求卡片、测试用例模板 |
 
 你可以直接打开这些文件看 Agent 记住了什么。
 
@@ -140,13 +167,18 @@ Agent 会自动学习和记忆，不需要你手动管理。
 pm-agent-bundle/
 ├── README.md
 ├── agents/
-│   ├── pm.md              主Agent（全流程 + 记忆）
-│   └── pm-review.md       子Agent（代码审查）
+│   ├── pm.md              主Agent（全流程 + 记忆 + 子Agent调度）
+│   ├── pm-review.md       子Agent（代码审查）
+│   └── pm-sync.md         子Agent（钉钉表格解析）
 └── pm-memory/             记忆模板（复制到你的项目目录）
     ├── user.md
     ├── projects.md
     ├── conventions.md
-    └── history.md
+    ├── history.md
+    └── templates/
+        ├── prd.md
+        ├── requirement.md
+        └── test-case.md
 ```
 
 ## 自定义
@@ -154,6 +186,10 @@ pm-agent-bundle/
 ### 修改 Agent 行为
 
 编辑 `agents/pm.md`，修改 prompt 部分。重启 OpenCode 生效。
+
+### 修改模板
+
+编辑 `pm-memory/templates/` 下的 `.md` 文件。Agent 输出时会按模板格式填充。
 
 ### 添加新 Agent
 
