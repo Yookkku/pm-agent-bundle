@@ -1,6 +1,7 @@
 ---
 description: 钉钉表格解析助手 - 解析钉钉表格数据，结构化为需求列表
 mode: subagent
+hidden: true
 temperature: 0.1
 tools:
   write: false
