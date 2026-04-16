@@ -1,6 +1,7 @@
 ---
 description: 代码审查助手 - 审查代码质量、安全问题、边界漏洞、性能隐患
 mode: subagent
+hidden: true
 temperature: 0.1
 tools:
   write: false
