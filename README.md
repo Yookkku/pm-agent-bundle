@@ -6,16 +6,14 @@ PM（产品经理）工作全流程智能体，基于 OpenCode（oh my opencode 
 
 ```
 pm（总指挥，primary agent）
-├── 自己处理：需求承接 → 分析 → 设计 → 边界 → 交接 → 测试
-├── 需要审查代码时 → 自动调度 @pm-review
-└── 收到钉钉表格时 → 自动调度 @pm-sync
+├── 自动检测用户意图 → 加载对应 Skill
+│   ├── pm-workflow        需求全流程（6阶段）
+│   ├── pm-code-review     代码审查
+│   └── pm-dingtalk-sync   钉钉表格解析
+└── 持久记忆（pm-memory/）
 ```
 
-| Agent | 角色 | 模式 |
-|-------|------|------|
-| pm | PM 全流程助手，统管六阶段工作流 | primary（主入口） |
-| pm-review | 代码审查专家，找业务逻辑/边界/安全问题 | subagent（被调度） |
-| pm-sync | 钉钉表格解析，结构化为需求列表 | subagent（被调度） |
+Tab 切换时只显示 **pm** 一个选项，Skill 根据上下文自动加载。
 
 ## 六阶段工作流
 
@@ -29,6 +27,14 @@ pm（总指挥，primary agent）
 | 6. 测试用例 | 功能/边界/异常测试用例 + 回归清单 |
 
 每步完成后会问"继续下一步？"，你可以随时跳到任意阶段。
+
+## Skill 自动触发
+
+| 你说的话 | 自动加载 |
+|---------|---------|
+| "我有个需求..." / "帮我写PRD" / "出个测试用例" | pm-workflow |
+| "帮我看看这段代码" / "review一下" | pm-code-review |
+| 粘贴钉钉表格数据 / "帮我梳理下待办" | pm-dingtalk-sync |
 
 ## 沟通规则
 
@@ -55,7 +61,7 @@ pm（总指挥，primary agent）
 git clone https://github.com/Yookkku/pm-agent-bundle.git
 ```
 
-### 第二步：复制 Agent 文件到全局目录
+### 第二步：复制 Agent 文件
 
 ```bash
 # Linux / macOS / WSL
@@ -67,7 +73,27 @@ mkdir -Force $env:APPDATA\opencode\agents
 Copy-Item pm-agent-bundle\agents\*.md $env:APPDATA\opencode\agents\
 ```
 
-### 第三步：复制记忆模板到你的项目目录
+### 第三步：复制 Skill 文件
+
+```bash
+# Linux / macOS / WSL
+mkdir -p ~/.hermes/skills/productivity/pm-workflow
+mkdir -p ~/.hermes/skills/productivity/pm-code-review
+mkdir -p ~/.hermes/skills/productivity/pm-dingtalk-sync
+cp pm-agent-bundle/skills/pm-workflow.md ~/.hermes/skills/productivity/pm-workflow/SKILL.md
+cp pm-agent-bundle/skills/pm-code-review.md ~/.hermes/skills/productivity/pm-code-review/SKILL.md
+cp pm-agent-bundle/skills/pm-dingtalk-sync.md ~/.hermes/skills/productivity/pm-dingtalk-sync/SKILL.md
+
+# Windows PowerShell
+mkdir -Force $env:USERPROFILE\.hermes\skills\productivity\pm-workflow
+mkdir -Force $env:USERPROFILE\.hermes\skills\productivity\pm-code-review
+mkdir -Force $env:USERPROFILE\.hermes\skills\productivity\pm-dingtalk-sync
+Copy-Item pm-agent-bundle\skills\pm-workflow.md $env:USERPROFILE\.hermes\skills\productivity\pm-workflow\SKILL.md
+Copy-Item pm-agent-bundle\skills\pm-code-review.md $env:USERPROFILE\.hermes\skills\productivity\pm-code-review\SKILL.md
+Copy-Item pm-agent-bundle\skills\pm-dingtalk-sync.md $env:USERPROFILE\.hermes\skills\productivity\pm-dingtalk-sync\SKILL.md
+```
+
+### 第四步：复制记忆模板到你的项目目录
 
 在你日常工作的项目根目录下：
 
@@ -83,13 +109,9 @@ Copy-Item pm-agent-bundle\pm-memory\*.md pm-memory\
 Copy-Item pm-agent-bundle\pm-memory\templates\*.md pm-memory\templates\
 ```
 
-### 第四步：重启 VS Code
+### 第五步：重启 VS Code
 
 关闭并重新打开 VS Code（或 Ctrl+Shift+P → Reload Window）。
-
-### 第五步：切换到 pm Agent
-
-在 OpenCode 面板中按 **Tab 键**切换 agent，选择 **pm**。
 
 ## 目录结构
 
@@ -97,35 +119,40 @@ Copy-Item pm-agent-bundle\pm-memory\templates\*.md pm-memory\templates\
 pm-agent-bundle/
 ├── README.md
 ├── agents/
-│   ├── pm.md            # 主 agent - PM 全流程 + 调度入口
-│   ├── pm-review.md     # 子 agent - 代码审查
-│   └── pm-sync.md       # 子 agent - 钉钉表格解析
-└── pm-memory/           # 记忆模板（复制到你的项目目录使用）
-    ├── user.md          # 用户画像和偏好
-    ├── projects.md      # 项目信息
-    ├── conventions.md   # 团队规范
-    ├── history.md       # 需求历史
+│   └── pm.md                    # 主 agent（primary）- 人格 + 记忆 + Skill 调度
+├── skills/
+│   ├── pm-workflow.md           # 六阶段工作流 Skill
+│   ├── pm-code-review.md        # 代码审查 Skill
+│   └── pm-dingtalk-sync.md      # 钉钉表格解析 Skill
+└── pm-memory/                   # 记忆模板（复制到你的项目目录使用）
+    ├── user.md                  # 用户画像和偏好
+    ├── projects.md              # 项目信息
+    ├── conventions.md           # 团队规范
+    ├── history.md               # 需求历史
     └── templates/
-        ├── prd.md       # PRD 模板
-        ├── requirement.md  # 需求卡片模板
-        └── test-case.md # 测试用例模板
+        ├── prd.md               # PRD 模板
+        ├── requirement.md       # 需求卡片模板
+        └── test-case.md         # 测试用例模板
 ```
 
 ## 使用示例
 
 ```
 你：我有个需求，想做一个离职人员自动交接功能
-pm：好的，我先确认一下核心点（输出需求卡片 + 1-2个问题）
+pm：好的，我先确认一下核心点 [自动加载 pm-workflow]
+    （输出需求卡片 + 1-2个问题）
 ...
 pm：继续下一步？
 你：继续
 pm：（输出需求分析：业务价值、用户故事、影响范围等）
 ...
 你：帮我看看这段代码
-pm：我帮你请代码审查专家看看（自动调度 @pm-review）
+pm：（自动加载 pm-code-review）
+    （输出审查报告）
 ...
 你：（粘贴钉钉表格）
-pm：我来帮你梳理一下（自动调度 @pm-sync，输出结构化表格）
+pm：（自动加载 pm-dingtalk-sync）
+    （输出结构化需求列表 + 统计）
 ```
 
 ## 记忆系统
@@ -139,22 +166,22 @@ Agent 会自动维护 `pm-memory/` 下的文件：
 
 ## 自定义
 
-### 修改 Agent 行为
+### 添加新的 Skill
 
-编辑 `agents/pm.md` 的 system prompt，修改沟通规则或工作流。
-
-### 添加子 Agent
-
-在 `agents/` 下新建 md 文件：
+在 `skills/` 下新建 md 文件：
 ```markdown
 ---
-description: 你的 agent 描述
-mode: subagent
+name: my-skill
+description: 触发条件描述
 ---
-你的 system prompt
+你的 skill 内容
 ```
 
-然后在 `pm.md` 的权限配置和调度指南中添加对新子 agent 的引用。
+然后在 `agents/pm.md` 的 Skill 调度表中添加触发规则。
+
+### 修改 Agent 行为
+
+编辑 `agents/pm.md` 的 system prompt，修改沟通规则或 Skill 调度逻辑。
 
 ### 添加模板
 
